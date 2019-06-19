@@ -4646,7 +4646,7 @@ def build_new_box(atoms, box_vectors, new_box_vectors):
     for atom in atoms:
         if atom.x > new_box_x or atom.y > new_box_y or atom.z > new_box_z:
             outside_box.add(atom.residue_number)
-    # Remake 'atoms', only including those which are not outside the box.
+    # Remake atoms, only including those which are not outside the box.
     atoms = [atom for atom in atoms if atom.residue_number not in outside_box]
     # print(len(outside_box))
     # print(len(atoms))
@@ -4666,13 +4666,15 @@ def build_new_box(atoms, box_vectors, new_box_vectors):
 def main(arguments):
     # The command line argument parser
     parser = argparse.ArgumentParser(description="Make a new water box.")
-    parser.add_argument("--size", help="Size of new box (cubic)", nargs=1, type=float,
+    parser.add_argument("--size", help="Size of new box (cubic) [nm]", nargs=1, type=float,
                         metavar='x')
-    parser.add_argument("--xyz", help="Size of new box (cuboid)", nargs=3, type=float,
+    parser.add_argument("--xyz", help="Size of new box (cuboid) [nm]", nargs=3, type=float,
                         metavar=('x', 'y', 'z'))
     parser.add_argument("--gro-file", help='Path to different solvent gro file')
     parser.add_argument("--output", help=("Path to new gro file (default water_SIZEA.gro"
                                           "or water_XxYxZA.gro"))
+    parser.add_argument("--angstroms", "-a", help="Consider sizes in angstroms (instead of nm)",
+                        action="store_true")
     args = parser.parse_args(arguments)
 
     # Ensuring that size XOR xyz are specified.
@@ -4681,8 +4683,13 @@ def main(arguments):
     elif args.size and args.xyz:
         raise parser.error('Can\'t specify size AND xyz.')
     elif args.size:
+        if args.angstroms:
+            box_size_A = args.size[0]
+            args.size[0] /= 10
+        else:
+            box_size_A = args.size[0] * 10
         new_box_vectors = args.size * 3  # [n] -> [n, n, n], not n*3
-        box_size_A = args.size[0] * 10
+
         if box_size_A.is_integer():
             format_pattern = 'water_{:.0f}A.gro'
         else:
@@ -4690,7 +4697,11 @@ def main(arguments):
         default_name = format_pattern.format(box_size_A)
     else:
         new_box_vectors = args.xyz
-        box_vectors_A = [vec * 10 for vec in new_box_vectors]
+        if args.angstroms:
+            box_vectors_A = [vec for vec in new_box_vectors]
+            new_box_vectors = [vec/10 for vec in new_box_vectors]
+        else:
+            box_vectors_A = [vec * 10 for vec in new_box_vectors]
         number_format = []
         for x in box_vectors_A:
             number_format.append('{:.0f}' if x.is_integer() else '{:.1f}')
