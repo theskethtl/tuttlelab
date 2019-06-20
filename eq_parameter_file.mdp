@@ -26,7 +26,7 @@ emtol                    = 1000
 ; Output frequency for coords (x), velocities (v) and forces (f)
 ; Typically want ~2500-5000 frames. If velocities or forces are required,
 ; remember to change these.
-nstxout                  = 5000
+nstxout                  = 2000
 nstvout                  = 0
 nstfout                  = 0
 
